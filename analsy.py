@@ -4,6 +4,7 @@ import pandas as pd
 def avg_price_ershoufang():
     data=pd.read_csv('./chongming.csv',sep=',',header=0,encoding='utf-8')
     avgPriceErshoufang = np.array(data['总价'])
+
     return np.average(avgPriceErshoufang,keepdims=False)
 
 def zhuangxiu_percent(huxingChoose,huxingErshoufang):
@@ -13,6 +14,7 @@ def zhuangxiu_percent(huxingChoose,huxingErshoufang):
     jianzCount = 0
     jingzCount = 0
     hxCount = 0
+
     for huxing,ZX in zip(huxingErshoufang,ZXErshoufang):
         if huxing == huxingChoose:
             hxCount += 1
@@ -22,6 +24,7 @@ def zhuangxiu_percent(huxingChoose,huxingErshoufang):
                 jianzCount += 1
             elif ZX == "精装":
                 jingzCount += 1
+
     return hxCount,mpCount,jianzCount,jingzCount
 
 def huxing_percent():
@@ -29,6 +32,7 @@ def huxing_percent():
     huxingErshoufang = np.array(data['户型'])
     huxing_types = np.unique(huxingErshoufang)
     print("该地区包含以下户型:",end=" ")
+
     for huxing_type in huxing_types:
         print(huxing_type ,end = ' ')
     print("\n请选择您感兴趣的户型:",end=" ")
@@ -49,7 +53,67 @@ def huxing_percent():
 
     return percent
 
+def ershoufang_hx_danjia(hx,data,totalNum):
+    dataHuxing = data["户型"]
+    dataPrice = data["单价"]
+    danjiaAvg = 0
+
+    for Huxing,Price in zip(dataHuxing,dataPrice):
+        if Huxing == hx:
+            danjiaAvg += Price
+
+    return danjiaAvg * 1.0 / totalNum
+
+def ershoufang_top10_url_print(hx,data):
+    dataFilerHx = data[data["户型"] == hx]
+    dataTopUrls = dataFilerHx.nlargest(10,"关注度")
+    print(dataTopUrls)
+    topUrls = []
+
+    for dataTopUrl in dataTopUrls:
+        topUrls.append(dataTopUrls["链接"])
+
+    return topUrls
+
 def hot_huxing_analsy():
-    
-    pass
-huxing_percent()
+    data=pd.read_csv('./chongming.csv',sep=',',header=0,encoding='utf-8')
+    dataHuxing = data["户型"]
+    dataAttention = data["关注度"]
+    huxing_types = np.unique(dataHuxing)
+    hxCountAll = []
+    dataAttentionAvgAll = []
+
+    for huxing_type in huxing_types:
+        hxCount = 0
+        dataAttentionAvg = 0
+        for huxing,attention in zip(dataHuxing,dataAttention):
+            if huxing == huxing_type:
+                hxCount += 1
+                dataAttentionAvg += attention
+        if hxCount == 0:
+            dataAttentionAvg = -1
+        else : 
+            dataAttentionAvg = dataAttentionAvg * 1.0 / hxCount
+        dataAttentionAvgAll.append(dataAttentionAvg)
+        hxCountAll.append(hxCount)
+
+    attentionHotest = max(dataAttentionAvgAll)
+    hxCountHotest = hxCountAll[dataAttentionAvgAll.index(max(dataAttentionAvgAll))]
+    hxHotest = None
+
+    for attentionAvg,hx,hxCount in zip(dataAttentionAvgAll,huxing_types,hxCountAll):
+        if attentionAvg != -1:
+            print(f"该地区{hx}户型平均关注度为{attentionAvg:.2f},该地区共有{hxCount}个该户型")
+        else :
+            print(f"该地区{hx}户型暂时没有,您可以关注其他地区相应房型或者关注该地区其他房型")
+        if attentionAvg == attentionHotest:
+            hxHotest = hx
+
+    hotestHxPriceAvg = ershoufang_hx_danjia(hxHotest,data,hxCountHotest)
+    hotestTopAttentionUrls = ershoufang_top10_url_print(hxHotest,data)
+
+    print(f"其中,{hxHotest}户型关注度最高,其在该地区的单价平均值为{hotestHxPriceAvg:.2f}元,为您列举了该户型10个关注度最高的二手房链接:")
+    for url in hotestTopAttentionUrls:
+        print(url)
+
+hot_huxing_analsy()
