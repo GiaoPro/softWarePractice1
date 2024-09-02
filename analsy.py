@@ -64,19 +64,32 @@ def ershoufang_hx_danjia(hx,data,totalNum):
 
     return danjiaAvg * 1.0 / totalNum
 
-def ershoufang_top10_url_print(hx,data):
-    dataFilerHx = data[data["户型"] == hx]
-    dataTopUrls = dataFilerHx.nlargest(10,"关注度")
-    print(dataTopUrls)
+def ershoufang_top10_url_print(hxChoose,data):
+    dataHxs = data["户型"]
+    dataAttentions = data["关注度"]
+    dataUrls = data["链接"]
+
+    attentions = []
+    Urls = [] 
     topUrls = []
 
-    for dataTopUrl in dataTopUrls:
-        topUrls.append(dataTopUrls["链接"])
+    for hx,attention,url in zip(dataHxs,dataAttentions,dataUrls):
+        if hx == hxChoose:
+            attentions.append(attention)
+            Urls.append(url)
 
-    return topUrls
+    iters = 10 if len(Urls) >= 10 else len(Urls)
+
+    for iter in range(iters):
+        index = attentions.index(max(attentions))
+        topUrls.append(Urls[index])
+        attentions.pop(index)
+        Urls.pop(index)
+    
+    return topUrls,iters
 
 def hot_huxing_analsy():
-    data=pd.read_csv('./chongming.csv',sep=',',header=0,encoding='utf-8')
+    data=pd.read_csv('./chongming.csv',sep=',',header=0,encoding='utf-8',index_col=None)
     dataHuxing = data["户型"]
     dataAttention = data["关注度"]
     huxing_types = np.unique(dataHuxing)
@@ -110,10 +123,10 @@ def hot_huxing_analsy():
             hxHotest = hx
 
     hotestHxPriceAvg = ershoufang_hx_danjia(hxHotest,data,hxCountHotest)
-    hotestTopAttentionUrls = ershoufang_top10_url_print(hxHotest,data)
+    hotestTopAttentionUrls,nums = ershoufang_top10_url_print(hxHotest,data)
 
-    print(f"其中,{hxHotest}户型关注度最高,其在该地区的单价平均值为{hotestHxPriceAvg:.2f}元,为您列举了该户型10个关注度最高的二手房链接:")
+    print(f"其中,{hxHotest}户型关注度最高,其在该地区的单价平均值为{hotestHxPriceAvg:.2f}元,为您列举了该户型{nums}个关注度最高的二手房链接:")
     for url in hotestTopAttentionUrls:
         print(url)
 
-hot_huxing_analsy()
+huxing_percent()
